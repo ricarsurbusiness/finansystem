@@ -1,0 +1,17 @@
+database:
+  host: "127.0.0.1"
+  port: 5433
+  user: "finansystem"
+  password: "finansystem_dev"
+  name: "finansystem"
+  sslmode: "disable"
+
+jwt:
+  secret: "finansystem-jwt-secret-key-change-in-production"
+  access_token_expiry: 15m
+  refresh_token_expiry: 168h  # 7 days
+
+app:
+  host: "0.0.0.0"
+  port: 8081
+  env: "development"
