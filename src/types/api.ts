@@ -9,6 +9,13 @@ export interface SesionDiaria {
   estado: 'abierta' | 'cerrada';
   created_at: string;
   closed_at?: string;
+  // Campos calculados en cierre
+  total_proveedor?: number;
+  total_gastos?: number;
+  total_disponible?: number;
+  total_egresos?: number;
+  total_dia?: number;
+  ventas?: number;
 }
 
 export interface Movimiento {

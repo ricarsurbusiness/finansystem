@@ -96,6 +96,43 @@ func (s *MovimientoService) ObtenerMovimientosBySesion(sesionID, usuarioID uuid.
 	return resp, nil
 }
 
+// ActualizarMovimiento actualiza un movimiento
+func (s *MovimientoService) ActualizarMovimiento(movimientoID, sesionID, usuarioID uuid.UUID, detalle string, monto float64, categoria string, subcategoria *string) error {
+	// Verificar sesión
+	sesion, err := s.sesionRepo.FindByID(sesionID)
+	if err != nil {
+		return ErrSesionNotFound
+	}
+
+	if sesion.UsuarioID != usuarioID {
+		return ErrUnauthorized
+	}
+
+	if sesion.Estado != entities.SesionAbierta {
+		return ErrSesionNoAbierta
+	}
+
+	// Verificar movimiento
+	movimiento, err := s.movimientoRepo.FindByID(movimientoID)
+	if err != nil {
+		return ErrMovimientoNotFound
+	}
+
+	if movimiento.SesionID != sesionID {
+		return ErrMovimientoNotFound
+	}
+
+	// Actualizar
+	movimiento.Detalle = detalle
+	movimiento.Monto = monto
+	movimiento.Categoria = entities.Categoria(categoria)
+	if subcategoria != nil {
+		movimiento.Subcategoria = subcategoria
+	}
+
+	return s.movimientoRepo.Update(movimiento)
+}
+
 // EliminarMovimiento elimina un movimiento
 func (s *MovimientoService) EliminarMovimiento(movimientoID, sesionID, usuarioID uuid.UUID) error {
 	// Verificar sesión

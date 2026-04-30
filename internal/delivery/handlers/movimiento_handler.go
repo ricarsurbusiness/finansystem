@@ -19,11 +19,11 @@ func NewMovimientoHandler(movimientoService *services.MovimientoService) *Movimi
 }
 
 type CrearMovimientoRequest struct {
-	SesionID     string `json:"sesion_id" binding:"required"`
-	Detalle      string `json:"detalle" binding:"required"`
+	SesionID     string  `json:"sesion_id" binding:"required"`
+	Detalle      string  `json:"detalle" binding:"required"`
 	Monto        float64 `json:"monto" binding:"required,min=0"`
-	Categoria    string `json:"categoria" binding:"required,oneof=proveedor gasto"`
-	Subcategoria string `json:"subcategoria"`
+	Categoria    string  `json:"categoria" binding:"required,oneof=proveedor gasto"`
+	Subcategoria string  `json:"subcategoria"`
 }
 
 // Crear maneja la creación de un nuevo movimiento
@@ -93,7 +93,7 @@ func (h *MovimientoHandler) ObtenerPorSesion(c *gin.Context) {
 	}
 
 	userID, _ := uuid.Parse(userIDStr)
-	sesionIDStr := c.Param("sesion_id")
+	sesionIDStr := c.Query("sesion_id")
 	sesionID, err := uuid.Parse(sesionIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de sesión inválido"})

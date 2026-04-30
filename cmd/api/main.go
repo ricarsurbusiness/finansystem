@@ -94,6 +94,7 @@ func main() {
 	sesionHandler := handlers.NewSesionHandler(sesionService)
 	movimientoHandler := handlers.NewMovimientoHandler(movimientoService)
 	refuerzoHandler := handlers.NewRefuerzoHandler(refuerzoService)
+	updateHandler := handlers.NewUpdateHandler(movimientoService, refuerzoService)
 
 	// Configurar Gin
 	if cfg.App.Env == "production" {
@@ -139,12 +140,15 @@ func main() {
 
 		// Movimientos
 		protected.POST("/movimientos", movimientoHandler.Crear)
-		protected.GET("/movimientos/:sesion_id", movimientoHandler.ObtenerPorSesion)
+		protected.PUT("/movimientos/:id", updateHandler.ActualizarMovimiento)
 		protected.DELETE("/movimientos/:id", movimientoHandler.Eliminar)
+		protected.GET("/movimientos", movimientoHandler.ObtenerPorSesion)
 
 		// Refuerzos
 		protected.POST("/refuerzos", refuerzoHandler.Crear)
-		protected.GET("/refuerzos/:sesion_id", refuerzoHandler.ObtenerPorSesion)
+		protected.PUT("/refuerzos/:id", updateHandler.ActualizarRefuerzo)
+		protected.DELETE("/refuerzos/:id", refuerzoHandler.Eliminar)
+		protected.GET("/refuerzos", refuerzoHandler.ObtenerPorSesion)
 	}
 
 	// Iniciar servidor

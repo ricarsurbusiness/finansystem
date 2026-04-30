@@ -53,8 +53,17 @@ export const sesionService = {
   },
 
   async obtenerMovimientos(sesionId: string): Promise<Movimiento[]> {
-    const response = await apiClient.get<Movimiento[]>(`/api/movimientos/${sesionId}`);
+    const response = await apiClient.get<Movimiento[]>(`/api/movimientos?sesion_id=${sesionId}`);
     return response.data;
+  },
+
+  async actualizarMovimiento(id: string, sesionId: string, data: {
+    detalle: string;
+    monto: number;
+    categoria: 'proveedor' | 'gasto';
+    subcategoria?: string;
+  }): Promise<void> {
+    await apiClient.put(`/api/movimientos/${id}?sesion_id=${sesionId}`, data);
   },
 
   async eliminarMovimiento(id: string, sesionId: string): Promise<void> {
@@ -68,7 +77,15 @@ export const sesionService = {
   },
 
   async obtenerRefuerzos(sesionId: string): Promise<Refuerzo[]> {
-    const response = await apiClient.get<Refuerzo[]>(`/api/refuerzos/${sesionId}`);
+    const response = await apiClient.get<Refuerzo[]>(`/api/refuerzos?sesion_id=${sesionId}`);
     return response.data;
+  },
+
+  async actualizarRefuerzo(id: string, sesionId: string, monto: number, observacion?: string): Promise<void> {
+    await apiClient.put(`/api/refuerzos/${id}?sesion_id=${sesionId}`, { monto, observacion });
+  },
+
+  async eliminarRefuerzo(id: string, sesionId: string): Promise<void> {
+    await apiClient.delete(`/api/refuerzos/${id}?sesion_id=${sesionId}`);
   },
 };

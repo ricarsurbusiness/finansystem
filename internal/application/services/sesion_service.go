@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	ErrSesionNotFound  = errors.New("sesión no encontrada")
-	ErrSesionCerrada   = errors.New("la sesión ya está cerrada")
-	ErrSesionAbierta   = errors.New("ya existe una sesión abierta para hoy")
-	ErrUnauthorized    = errors.New("no autorizado")
+	ErrSesionNotFound = errors.New("sesión no encontrada")
+	ErrSesionCerrada  = errors.New("la sesión ya está cerrada")
+	ErrSesionAbierta  = errors.New("ya existe una sesión abierta para hoy")
+	ErrUnauthorized   = errors.New("no autorizado")
 )
 
 type SesionService struct {
@@ -35,9 +35,9 @@ func NewSesionService(
 }
 
 type CrearSesionInput struct {
-	UsuarioID    uuid.UUID
-	BaseInicial  float64
-	Fecha        *time.Time
+	UsuarioID   uuid.UUID
+	BaseInicial float64
+	Fecha       *time.Time
 }
 
 type CerrarSesionInput struct {
@@ -79,7 +79,7 @@ func (s *SesionService) CrearSesion(input CrearSesionInput) (*entities.SesionRes
 		return nil, err
 	}
 
-	return sesion.ToResponse(), nil
+	return sesion.ToResponse(0, 0), nil
 }
 
 // ObtenerSesion obtiene una sesión por ID
@@ -93,7 +93,7 @@ func (s *SesionService) ObtenerSesion(sesionID, usuarioID uuid.UUID) (*entities.
 		return nil, ErrUnauthorized
 	}
 
-	return sesion.ToResponse(), nil
+	return sesion.ToResponse(0, 0), nil
 }
 
 // ObtenerSesiones obtiene todas las sesiones del usuario
@@ -105,7 +105,7 @@ func (s *SesionService) ObtenerSesiones(usuarioID uuid.UUID) ([]entities.SesionR
 
 	resp := make([]entities.SesionResponse, len(sesiones))
 	for i, sesion := range sesiones {
-		resp[i] = *sesion.ToResponse()
+		resp[i] = *sesion.ToResponse(0, 0)
 	}
 
 	return resp, nil
@@ -118,7 +118,7 @@ func (s *SesionService) ObtenerSesionAbierta(usuarioID uuid.UUID) (*entities.Ses
 		return nil, ErrSesionNotFound
 	}
 
-	return sesion.ToResponse(), nil
+	return sesion.ToResponse(0, 0), nil
 }
 
 // CerrarSesion cierra una sesión diaria
@@ -163,11 +163,8 @@ func (s *SesionService) CerrarSesion(input CerrarSesionInput) (*entities.SesionR
 		return nil, err
 	}
 
-	// Nota: total y ventas pueden incluirse en la respuesta si se requiere
-	// total := sesion.CalcularTotal(totalProveedor, totalGasto)
-	// ventas := sesion.CalcularVentas(totalProveedor, totalGasto)
-
-	resp := sesion.ToResponse()
+	// Retornar con cálculos
+	resp := sesion.ToResponse(totalProveedor, totalGasto)
 	return resp, nil
 }
 

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"time"
 
 	"github.com/finansystem/internal/domain/entities"
@@ -10,7 +11,7 @@ import (
 
 type RefuerzoService struct {
 	refuerzoRepo ports.RefuerzoRepository
-	sesionRepo    ports.SesionRepository
+	sesionRepo   ports.SesionRepository
 }
 
 func NewRefuerzoService(
@@ -19,7 +20,7 @@ func NewRefuerzoService(
 ) *RefuerzoService {
 	return &RefuerzoService{
 		refuerzoRepo: refuerzoRepo,
-		sesionRepo:    sesionRepo,
+		sesionRepo:   sesionRepo,
 	}
 }
 
@@ -47,10 +48,10 @@ func (s *RefuerzoService) CrearRefuerzo(input CrearRefuerzoInput) (*entities.Ref
 	}
 
 	refuerzo := &entities.Refuerzo{
-		SesionID:   input.SesionID,
-		Monto:      input.Monto,
+		SesionID:    input.SesionID,
+		Monto:       input.Monto,
 		Observacion: input.Observacion,
-		Hora:       time.Now(),
+		Hora:        time.Now(),
 	}
 
 	err = s.refuerzoRepo.Create(refuerzo)
@@ -84,4 +85,68 @@ func (s *RefuerzoService) ObtenerRefuerzosBySesion(sesionID, usuarioID uuid.UUID
 	}
 
 	return resp, nil
+}
+
+// ActualizarRefuerzo actualiza un refuerzo
+func (s *RefuerzoService) ActualizarRefuerzo(refuerzoID, sesionID, usuarioID uuid.UUID, monto float64, observacion string) error {
+	// Verificar sesión
+	sesion, err := s.sesionRepo.FindByID(sesionID)
+	if err != nil {
+		return ErrSesionNotFound
+	}
+
+	if sesion.UsuarioID != usuarioID {
+		return ErrUnauthorized
+	}
+
+	if sesion.Estado != entities.SesionAbierta {
+		return ErrSesionNoAbierta
+	}
+
+	// Verificar refuerzo
+	refuerzo, err := s.refuerzoRepo.FindByID(refuerzoID)
+	if err != nil {
+		return errors.New("refuerzo no encontrado")
+	}
+
+	if refuerzo.SesionID != sesionID {
+		return errors.New("refuerzo no encontrado")
+	}
+
+	// Actualizar
+	refuerzo.Monto = monto
+	if observacion != "" {
+		refuerzo.Observacion = &observacion
+	}
+
+	return s.refuerzoRepo.Update(refuerzo)
+}
+
+// EliminarRefuerzo elimina un refuerzo
+func (s *RefuerzoService) EliminarRefuerzo(refuerzoID, sesionID, usuarioID uuid.UUID) error {
+	// Verificar sesión
+	sesion, err := s.sesionRepo.FindByID(sesionID)
+	if err != nil {
+		return ErrSesionNotFound
+	}
+
+	if sesion.UsuarioID != usuarioID {
+		return ErrUnauthorized
+	}
+
+	if sesion.Estado != entities.SesionAbierta {
+		return ErrSesionNoAbierta
+	}
+
+	// Verificar refuerzo
+	refuerzo, err := s.refuerzoRepo.FindByID(refuerzoID)
+	if err != nil {
+		return errors.New("refuerzo no encontrado")
+	}
+
+	if refuerzo.SesionID != sesionID {
+		return errors.New("refuerzo no encontrado")
+	}
+
+	return s.refuerzoRepo.Delete(refuerzoID)
 }

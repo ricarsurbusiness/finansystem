@@ -86,7 +86,7 @@ func (h *RefuerzoHandler) ObtenerPorSesion(c *gin.Context) {
 	}
 
 	userID, _ := uuid.Parse(userIDStr)
-	sesionIDStr := c.Param("sesion_id")
+	sesionIDStr := c.Query("sesion_id")
 	sesionID, err := uuid.Parse(sesionIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de sesión inválido"})
@@ -108,4 +108,44 @@ func (h *RefuerzoHandler) ObtenerPorSesion(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, refuerzos)
+}
+
+// Eliminar maneja la eliminación de un refuerzo
+func (h *RefuerzoHandler) Eliminar(c *gin.Context) {
+	userIDStr := middleware.GetUserID(c)
+	if userIDStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+
+	userID, _ := uuid.Parse(userIDStr)
+	refuerzoIDStr := c.Param("id")
+	refuerzoID, err := uuid.Parse(refuerzoIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de refuerzo inválido"})
+		return
+	}
+
+	sesionIDStr := c.Query("sesion_id")
+	if sesionIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "se requiere sesion_id"})
+		return
+	}
+	sesionID, _ := uuid.Parse(sesionIDStr)
+
+	err = h.refuerzoService.EliminarRefuerzo(refuerzoID, sesionID, userID)
+	if err != nil {
+		if err.Error() == "refuerzo no encontrado" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		if err.Error() == "sesión no encontrada" || err.Error() == "no autorizado" {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error al eliminar"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "refuerzo eliminado"})
 }
