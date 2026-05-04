@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/finansystem/internal/domain/entities"
@@ -10,10 +11,13 @@ import (
 )
 
 var (
-	ErrSesionNotFound = errors.New("sesión no encontrada")
-	ErrSesionCerrada  = errors.New("la sesión ya está cerrada")
-	ErrSesionAbierta  = errors.New("ya existe una sesión abierta para hoy")
-	ErrUnauthorized   = errors.New("no autorizado")
+	ErrSesionNotFound       = errors.New("sesión no encontrada")
+	ErrSesionCerrada        = errors.New("la sesión ya está cerrada")
+	ErrSesionAbierta        = errors.New("ya existe una sesión abierta para hoy")
+	ErrUnauthorized         = errors.New("no autorizado")
+	ErrMaxModificaciones    = errors.New("se alcanzó el límite máximo de modificaciones (3)")
+	ErrSesionNoCerrada      = errors.New("la sesión no está cerrada")
+	ErrSesionConMovimientos = errors.New("no se puede eliminar una sesión con movimientos")
 )
 
 type SesionService struct {
@@ -50,13 +54,14 @@ type CerrarSesionInput struct {
 // CrearSesion crea una nueva sesión diaria
 func (s *SesionService) CrearSesion(input CrearSesionInput) (*entities.SesionResponse, error) {
 	// Verificar si ya hay una sesión abierta para hoy
-	fecha := time.Now()
+	loc, _ := time.LoadLocation("America/Bogota")
+	fecha := time.Now().In(loc)
 	if input.Fecha != nil {
 		fecha = *input.Fecha
 	}
 
 	// Normalizar fecha
-	fecha = time.Date(fecha.Year(), fecha.Month(), fecha.Day(), 0, 0, 0, 0, time.UTC)
+	fecha = time.Date(fecha.Year(), fecha.Month(), fecha.Day(), 0, 0, 0, 0, loc)
 
 	// Verificar sesión abierta
 	abierta, _ := s.sesionRepo.FindAbiertaByUsuario(input.UsuarioID)
@@ -105,7 +110,19 @@ func (s *SesionService) ObtenerSesiones(usuarioID uuid.UUID) ([]entities.SesionR
 
 	resp := make([]entities.SesionResponse, len(sesiones))
 	for i, sesion := range sesiones {
-		resp[i] = *sesion.ToResponse(0, 0)
+		// Calcular totales de movimientos solo si la sesión está cerrada
+		var totalProveedor, totalGasto float64
+		if sesion.Estado == entities.SesionCerrada {
+			movimientos, _ := s.movimientoRepo.FindBySesion(sesion.ID)
+			for _, m := range movimientos {
+				if m.Categoria == entities.CategoriaProveedor {
+					totalProveedor += m.Monto
+				} else {
+					totalGasto += m.Monto
+				}
+			}
+		}
+		resp[i] = *sesion.ToResponse(totalProveedor, totalGasto)
 	}
 
 	return resp, nil
@@ -114,6 +131,16 @@ func (s *SesionService) ObtenerSesiones(usuarioID uuid.UUID) ([]entities.SesionR
 // ObtenerSesionAbierta obtiene la sesión abierta del usuario
 func (s *SesionService) ObtenerSesionAbierta(usuarioID uuid.UUID) (*entities.SesionResponse, error) {
 	sesion, err := s.sesionRepo.FindAbiertaByUsuario(usuarioID)
+	if err != nil {
+		return nil, ErrSesionNotFound
+	}
+
+	return sesion.ToResponse(0, 0), nil
+}
+
+// ObtenerUltimaCerrada obtiene la última sesión cerrada del usuario
+func (s *SesionService) ObtenerUltimaCerrada(usuarioID uuid.UUID) (*entities.SesionResponse, error) {
+	sesion, err := s.sesionRepo.FindLastClosedByUsuario(usuarioID)
 	if err != nil {
 		return nil, ErrSesionNotFound
 	}
@@ -193,4 +220,226 @@ func (s *SesionService) ObtenerDetalleSesion(sesionID, usuarioID uuid.UUID) (*en
 	}
 
 	return sesion, nil
+}
+
+type ModificarSesionInput struct {
+	UsuarioID     uuid.UUID
+	SesionID      uuid.UUID
+	EfectivoFinal float64
+	BaseSiguiente float64
+}
+
+// ModificarSesionCerrada modifica una sesión cerrada (máx 3 veces)
+func (s *SesionService) ModificarSesionCerrada(input ModificarSesionInput) (*entities.SesionResponse, error) {
+	sesion, err := s.sesionRepo.FindByID(input.SesionID)
+	if err != nil {
+		return nil, ErrSesionNotFound
+	}
+
+	if sesion.UsuarioID != input.UsuarioID {
+		return nil, ErrUnauthorized
+	}
+
+	if sesion.Estado != entities.SesionCerrada {
+		return nil, ErrSesionNoCerrada
+	}
+
+	if sesion.Modificaciones >= 3 {
+		return nil, ErrMaxModificaciones
+	}
+
+	// Actualizar valores
+	sesion.EfectivoFinal = input.EfectivoFinal
+	sesion.BaseSiguiente = input.BaseSiguiente
+	sesion.Modificaciones++
+
+	err = s.sesionRepo.Update(sesion)
+	if err != nil {
+		return nil, err
+	}
+
+	// Obtener movimientos para calcular ventas
+	movimientos, _ := s.movimientoRepo.FindBySesion(input.SesionID)
+	var totalProveedor, totalGasto float64
+	for _, m := range movimientos {
+		if m.Categoria == entities.CategoriaProveedor {
+			totalProveedor += m.Monto
+		} else {
+			totalGasto += m.Monto
+		}
+	}
+
+	return sesion.ToResponse(totalProveedor, totalGasto), nil
+}
+
+// EliminarSesionCerrada elimina una sesión cerrada (solo si no tiene movimientos)
+func (s *SesionService) EliminarSesionCerrada(sesionID, usuarioID uuid.UUID) error {
+	sesion, err := s.sesionRepo.FindByID(sesionID)
+	if err != nil {
+		return ErrSesionNotFound
+	}
+
+	if sesion.UsuarioID != usuarioID {
+		return ErrUnauthorized
+	}
+
+	if sesion.Estado != entities.SesionCerrada {
+		return ErrSesionNoCerrada
+	}
+
+	// Verificar que no tenga movimientos
+	movimientos, _ := s.movimientoRepo.FindBySesion(sesionID)
+	if len(movimientos) > 0 {
+		return ErrSesionConMovimientos
+	}
+
+	return s.sesionRepo.Delete(sesionID)
+}
+
+// ReporteSesion representa una sesión en el reporte
+type ReporteSesion struct {
+	Fecha         string  `json:"fecha"`
+	BaseInicial   float64 `json:"base_inicial"`
+	Refuerzos     float64 `json:"refuerzos"`
+	EfectivoFinal float64 `json:"efectivo_final"`
+	Proveedores   float64 `json:"proveedores"`
+	Gastos        float64 `json:"gastos"`
+	Ventas        float64 `json:"ventas"`
+}
+
+// ReporteResumen representa el resumen de un período
+type ReporteResumen struct {
+	Periodo          string          `json:"periodo"`
+	TotalDias        int             `json:"total_dias"`
+	TotalBase        float64         `json:"total_base"`
+	TotalRefuerzos   float64         `json:"total_refuerzos"`
+	TotalProveedores float64         `json:"total_proveedores"`
+	TotalGastos      float64         `json:"total_gastos"`
+	TotalVentas      float64         `json:"total_ventas"`
+	Sesiones         []ReporteSesion `json:"sesiones"`
+}
+
+// ObtenerReporteSemanal obtiene el reporte de la semana actual
+func (s *SesionService) ObtenerReporteSemanal(usuarioID uuid.UUID) (*ReporteResumen, error) {
+	loc, _ := time.LoadLocation("America/Bogota")
+	now := time.Now().In(loc)
+
+	// Calcular inicio de semana (lunes)
+	weekday := int(now.Weekday())
+	if weekday == 0 {
+		weekday = 7 // Domingo = 7
+	}
+	lunes := now.AddDate(0, 0, -(weekday - 1))
+	inicioSemana := time.Date(lunes.Year(), lunes.Month(), lunes.Day(), 0, 0, 0, 0, loc)
+
+	// Fin de semana
+	finSemana := inicioSemana.AddDate(0, 0, 7)
+
+	return s.generarReporte(usuarioID, inicioSemana, finSemana, "Semana actual")
+}
+
+// ObtenerReporteMensual obtiene el reporte del mes actual
+func (s *SesionService) ObtenerReporteMensual(usuarioID uuid.UUID) (*ReporteResumen, error) {
+	loc, _ := time.LoadLocation("America/Bogota")
+	now := time.Now().In(loc)
+
+	// Primer día del mes
+	inicioMes := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc)
+	// Primer día del siguiente mes
+	finMes := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, loc)
+
+	meses := []string{"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"}
+	periodo := fmt.Sprintf("%s %d", meses[now.Month()-1], now.Year())
+
+	return s.generarReporte(usuarioID, inicioMes, finMes, periodo)
+}
+
+// ObtenerReporteMensualPorMes obtiene el reporte de un mes específico
+func (s *SesionService) ObtenerReporteMensualPorMes(usuarioID uuid.UUID, year, month int) (*ReporteResumen, error) {
+	loc, _ := time.LoadLocation("America/Bogota")
+
+	// Primer día del mes especificado
+	inicioMes := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, loc)
+	// Primer día del siguiente mes
+	finMes := time.Date(year, time.Month(month)+1, 1, 0, 0, 0, 0, loc)
+
+	meses := []string{"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"}
+	periodo := fmt.Sprintf("%s %d", meses[month-1], year)
+
+	return s.generarReporte(usuarioID, inicioMes, finMes, periodo)
+}
+
+// generarReporte genera un reporte para un rango de fechas
+func (s *SesionService) generarReporte(usuarioID uuid.UUID, inicio, fin time.Time, periodo string) (*ReporteResumen, error) {
+	sesiones, err := s.sesionRepo.FindByUsuario(usuarioID)
+	if err != nil {
+		return nil, err
+	}
+
+	reporte := &ReporteResumen{
+		Periodo:  periodo,
+		Sesiones: []ReporteSesion{},
+	}
+
+	// Debug: fechas del período
+	loc, _ := time.LoadLocation("America/Bogota")
+	inicioDia := time.Date(inicio.Year(), inicio.Month(), inicio.Day(), 0, 0, 0, 0, loc)
+	finDia := time.Date(fin.Year(), fin.Month(), fin.Day(), 0, 0, 0, 0, loc).AddDate(0, 0, -1)
+
+	for _, sesion := range sesiones {
+		// Solo sesiones cerradas dentro del período
+		if sesion.Estado != entities.SesionCerrada {
+			continue
+		}
+
+		// Comparar fechas como fechas de calendario (año, mes, día)
+		// Esto evita problemas de timezone
+		sesionYear, sesionMonth, sesionDay := sesion.Fecha.Date()
+		inicioYear, inicioMonth, inicioDay := inicioDia.Date()
+		finYear, finMonth, finDay := finDia.Date()
+
+		sesionDate := sesionYear*10000 + int(sesionMonth)*100 + sesionDay
+		inicioDate := inicioYear*10000 + int(inicioMonth)*100 + inicioDay
+		finDate := finYear*10000 + int(finMonth)*100 + finDay
+
+		if sesionDate < inicioDate || sesionDate > finDate {
+			continue
+		}
+
+		// Obtener movimientos para calcular proveedores y gastos
+		movimientos, _ := s.movimientoRepo.FindBySesion(sesion.ID)
+		var totalProveedor, totalGasto float64
+		for _, m := range movimientos {
+			if m.Categoria == entities.CategoriaProveedor {
+				totalProveedor += m.Monto
+			} else {
+				totalGasto += m.Monto
+			}
+		}
+
+		// Calcular ventas
+		ventas := (totalProveedor + totalGasto + sesion.EfectivoFinal) - (sesion.BaseInicial + sesion.Refuerzos)
+
+		reporteSesion := ReporteSesion{
+			Fecha:         sesion.Fecha.Format("2006-01-02"),
+			BaseInicial:   sesion.BaseInicial,
+			Refuerzos:     sesion.Refuerzos,
+			EfectivoFinal: sesion.EfectivoFinal,
+			Proveedores:   totalProveedor,
+			Gastos:        totalGasto,
+			Ventas:        ventas,
+		}
+
+		reporte.Sesiones = append(reporte.Sesiones, reporteSesion)
+
+		// Acumular totales
+		reporte.TotalDias++
+		reporte.TotalBase += sesion.BaseInicial
+		reporte.TotalRefuerzos += sesion.Refuerzos
+		reporte.TotalProveedores += totalProveedor
+		reporte.TotalGastos += totalGasto
+		reporte.TotalVentas += ventas
+	}
+
+	return reporte, nil
 }

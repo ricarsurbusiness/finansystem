@@ -47,103 +47,58 @@ export default function MovimientoForm({ sesionId, onMovimientoAgregado, tipo }:
   };
 
   return (
-    <form onSubmit={handleSubmit} style={styles.form}>
+    <form onSubmit={handleSubmit} className="space-y-4">
       {tipo === 'movimiento' && (
-        <div style={styles.inputGroup}>
-          <select
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value as 'proveedor' | 'gasto')}
-            style={styles.select}
-          >
-            <option value="gasto">Gasto</option>
-            <option value="proveedor">Proveedor</option>
-          </select>
-        </div>
+        <select
+          value={categoria}
+          onChange={(e) => setCategoria(e.target.value as 'proveedor' | 'gasto')}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        >
+          <option value="gasto">Gasto</option>
+          <option value="proveedor">Proveedor</option>
+        </select>
       )}
 
       {tipo === 'movimiento' && (
-        <div style={styles.inputGroup}>
-          <input
-            type="text"
-            value={detalle}
-            onChange={(e) => setDetalle(e.target.value)}
-            placeholder={categoria === 'proveedor' ? 'Ej: Queso, Pollo' : 'Ej: Transporte, Servicios'}
-            style={styles.input}
-          />
-        </div>
+        <input
+          type="text"
+          value={detalle}
+          onChange={(e) => setDetalle(e.target.value)}
+          placeholder={categoria === 'proveedor' ? 'Ej: Queso, Pollo' : 'Ej: Transporte, Servicios'}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        />
       )}
 
       {tipo === 'refuerzo' && (
-        <div style={styles.inputGroup}>
-          <input
-            type="text"
-            value={detalle}
-            onChange={(e) => setDetalle(e.target.value)}
-            placeholder="Observación (opcional)"
-            style={styles.input}
-          />
-        </div>
+        <input
+          type="text"
+          value={detalle}
+          onChange={(e) => setDetalle(e.target.value)}
+          placeholder="Observación (opcional)"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        />
       )}
 
-      <div style={styles.inputGroup}>
-        <input
-          type="number"
-          value={monto}
-          onChange={(e) => setMonto(e.target.value)}
-          placeholder="Monto"
-          style={styles.input}
-          min="0"
-          step="0.01"
-          required
-        />
-      </div>
+      <input
+        type="number"
+        value={monto}
+        onChange={(e) => setMonto(e.target.value)}
+        placeholder="Monto"
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        min="0"
+        step="0.01"
+        required
+      />
 
-      {error && <p style={styles.error}>{error}</p>}
+      {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
 
-      <button type="submit" style={styles.button} disabled={loading}>
+      <button 
+        type="submit" 
+        disabled={loading}
+        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 rounded-lg transition text-sm"
+      >
         {loading ? 'Agregando...' : tipo === 'refuerzo' ? 'Agregar Refuerzo' : 'Agregar'}
       </button>
     </form>
   );
 }
-
-const styles: { [key: string]: React.CSSProperties } = {
-  form: {
-    display: 'flex',
-    gap: '10px',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-  },
-  inputGroup: {
-    flex: '1 1 auto',
-  },
-  input: {
-    padding: '10px',
-    borderRadius: '6px',
-    border: '1px solid #d1d5db',
-    fontSize: '14px',
-    width: '100%',
-  },
-  select: {
-    padding: '10px',
-    borderRadius: '6px',
-    border: '1px solid #d1d5db',
-    fontSize: '14px',
-    backgroundColor: 'white',
-  },
-  button: {
-    padding: '10px 16px',
-    borderRadius: '6px',
-    border: 'none',
-    backgroundColor: '#2563eb',
-    color: 'white',
-    fontSize: '14px',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-  },
-  error: {
-    color: '#dc2626',
-    fontSize: '12px',
-    width: '100%',
-  },
-};

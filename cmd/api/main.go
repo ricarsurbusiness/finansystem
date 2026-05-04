@@ -134,9 +134,17 @@ func main() {
 		protected.POST("/sesiones", sesionHandler.Crear)
 		protected.GET("/sesiones", sesionHandler.ObtenerTodas)
 		protected.GET("/sesiones/abierta", sesionHandler.ObtenerAbierta)
+		protected.GET("/sesiones/ultima-cerrada", sesionHandler.ObtenerUltimaCerrada)
 		protected.GET("/sesiones/:id", sesionHandler.Obtener)
 		protected.GET("/sesiones/:id/detalle", sesionHandler.ObtenerDetalle)
 		protected.POST("/sesiones/:id/close", sesionHandler.Cerrar)
+		protected.PUT("/sesiones/:id", sesionHandler.ModificarSesion)
+		protected.DELETE("/sesiones/:id", sesionHandler.EliminarSesion)
+
+		// Reportes
+		protected.GET("/reportes/semanal", sesionHandler.ObtenerReporteSemanal)
+		protected.GET("/reportes/mensual", sesionHandler.ObtenerReporteMensual)
+		protected.GET("/reportes/mensual/exportar", sesionHandler.ExportarReporteMensualCSV)
 
 		// Movimientos
 		protected.POST("/movimientos", movimientoHandler.Crear)

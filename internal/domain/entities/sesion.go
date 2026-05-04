@@ -14,19 +14,20 @@ const (
 )
 
 type SesionDiaria struct {
-	ID            uuid.UUID    `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	UsuarioID     uuid.UUID    `json:"usuario_id" gorm:"type:uuid;not null"`
-	Fecha         time.Time    `json:"fecha" gorm:"type:date;not null"`
-	BaseInicial   float64      `json:"base_inicial" gorm:"type:numeric(12,2);not null"`
-	Refuerzos     float64      `json:"refuerzos" gorm:"type:numeric(12,2);default:0"`
-	EfectivoFinal float64      `json:"efectivo_final" gorm:"type:numeric(12,2);default:0"`
-	BaseSiguiente float64      `json:"base_siguiente" gorm:"type:numeric(12,2);default:0"`
-	Estado        SesionEstado `json:"estado" gorm:"type:varchar(20);default:'abierta'"`
-	CreatedAt     time.Time    `json:"created_at" gorm:"autoCreateTime"`
-	ClosedAt      *time.Time   `json:"closed_at" gorm:"nullable"`
-	Usuario       User         `json:"usuario,omitempty" gorm:"foreignKey:UsuarioID;references:ID"`
-	Movimientos   []Movimiento `json:"movimientos,omitempty" gorm:"foreignKey:SesionID;references:ID"`
-	RefuerzosList []Refuerzo   `json:"refuerzos_list,omitempty" gorm:"foreignKey:SesionID;references:ID"`
+	ID             uuid.UUID    `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	UsuarioID      uuid.UUID    `json:"usuario_id" gorm:"type:uuid;not null"`
+	Fecha          time.Time    `json:"fecha" gorm:"type:date;not null"`
+	BaseInicial    float64      `json:"base_inicial" gorm:"type:numeric(12,2);not null"`
+	Refuerzos      float64      `json:"refuerzos" gorm:"type:numeric(12,2);default:0"`
+	EfectivoFinal  float64      `json:"efectivo_final" gorm:"type:numeric(12,2);default:0"`
+	BaseSiguiente  float64      `json:"base_siguiente" gorm:"type:numeric(12,2);default:0"`
+	Estado         SesionEstado `json:"estado" gorm:"type:varchar(20);default:'abierta'"`
+	Modificaciones int          `json:"modificaciones" gorm:"type:int;default:0"`
+	CreatedAt      time.Time    `json:"created_at" gorm:"autoCreateTime"`
+	ClosedAt       *time.Time   `json:"closed_at" gorm:"nullable"`
+	Usuario        User         `json:"usuario,omitempty" gorm:"foreignKey:UsuarioID;references:ID"`
+	Movimientos    []Movimiento `json:"movimientos,omitempty" gorm:"foreignKey:SesionID;references:ID"`
+	RefuerzosList  []Refuerzo   `json:"refuerzos_list,omitempty" gorm:"foreignKey:SesionID;references:ID"`
 }
 
 func (SesionDiaria) TableName() string {

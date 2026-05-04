@@ -40,6 +40,11 @@ export const sesionService = {
     return response.data;
   },
 
+  async obtenerUltimaCerrada(): Promise<SesionDiaria> {
+    const response = await apiClient.get<SesionDiaria>('/api/sesiones/ultima-cerrada');
+    return response.data;
+  },
+
   // Movimientos
   async crearMovimiento(data: {
     sesion_id: string;
@@ -87,5 +92,83 @@ export const sesionService = {
 
   async eliminarRefuerzo(id: string, sesionId: string): Promise<void> {
     await apiClient.delete(`/api/refuerzos/${id}?sesion_id=${sesionId}`);
+  },
+
+  // Modificar sesión cerrada
+  async modificar(sesionId: string, efectivoFinal: number, baseSiguiente: number): Promise<SesionDiaria> {
+    const response = await apiClient.put<SesionDiaria>(`/api/sesiones/${sesionId}`, {
+      efectivo_final: efectivoFinal,
+      base_siguiente: baseSiguiente,
+    });
+    return response.data;
+  },
+
+  // Eliminar sesión cerrada
+  async eliminar(sesionId: string): Promise<void> {
+    await apiClient.delete(`/api/sesiones/${sesionId}`);
+  },
+
+  // Reportes
+  async obtenerReporteSemanal(): Promise<{
+    periodo: string;
+    total_dias: number;
+    total_base: number;
+    total_refuerzos: number;
+    total_proveedores: number;
+    total_gastos: number;
+    total_ventas: number;
+    sesiones: Array<{
+      fecha: string;
+      base_inicial: number;
+      refuerzos: number;
+      efectivo_final: number;
+      proveedores: number;
+      gastos: number;
+      ventas: number;
+    }>;
+  }> {
+    const response = await apiClient.get('/api/reportes/semanal');
+    return response.data;
+  },
+
+  async obtenerReporteMensual(year?: number, month?: number): Promise<{
+    periodo: string;
+    total_dias: number;
+    total_base: number;
+    total_refuerzos: number;
+    total_proveedores: number;
+    total_gastos: number;
+    total_ventas: number;
+    sesiones: Array<{
+      fecha: string;
+      base_inicial: number;
+      refuerzos: number;
+      efectivo_final: number;
+      proveedores: number;
+      gastos: number;
+      ventas: number;
+    }>;
+  }> {
+    let url = '/api/reportes/mensual';
+    if (year && month) {
+      url += `?year=${year}&month=${month}`;
+    }
+    const response = await apiClient.get(url);
+    return response.data;
+  },
+
+  async exportarReporteMensualCSV(year?: number, month?: number): Promise<void> {
+    let url = '/api/reportes/mensual/exportar';
+    if (year && month) {
+      url += `?year=${year}&month=${month}`;
+    }
+    const response = await apiClient.get(url, { responseType: 'blob' });
+    const urlBlob = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = urlBlob;
+    link.setAttribute('download', `reporte_mensual_${year}_${month}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   },
 };

@@ -7,6 +7,7 @@ export interface SesionDiaria {
   efectivo_final: number;
   base_siguiente: number;
   estado: 'abierta' | 'cerrada';
+  modificaciones?: number;
   created_at: string;
   closed_at?: string;
   // Campos calculados en cierre

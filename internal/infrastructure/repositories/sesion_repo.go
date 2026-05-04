@@ -56,6 +56,15 @@ func (r *SesionRepository) FindAbiertaByUsuario(usuarioID uuid.UUID) (*entities.
 	return &sesion, nil
 }
 
+func (r *SesionRepository) FindLastClosedByUsuario(usuarioID uuid.UUID) (*entities.SesionDiaria, error) {
+	var sesion entities.SesionDiaria
+	err := r.db.Where("usuario_id = ? AND estado != ?", usuarioID, entities.SesionAbierta).Order("fecha DESC").First(&sesion).Error
+	if err != nil {
+		return nil, err
+	}
+	return &sesion, nil
+}
+
 func (r *SesionRepository) Update(sesion *entities.SesionDiaria) error {
 	return r.db.Save(sesion).Error
 }

@@ -10,6 +10,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.2.4",
     "axios": "^1.6.5",
     "next": "14.1.0",
     "react": "^18.2.0",
@@ -21,9 +22,12 @@
     "@types/node": "^20.11.5",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.5.0",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.1.0",
     "jsdom": "^24.0.0",
+    "postcss": "^8.5.13",
+    "tailwindcss": "^4.2.4",
     "typescript": "^5.3.3",
     "vitest": "^1.2.1"
   }

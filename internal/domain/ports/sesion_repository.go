@@ -13,6 +13,7 @@ type SesionRepository interface {
 	FindByUsuarioAndFecha(usuarioID uuid.UUID, fecha time.Time) (*entities.SesionDiaria, error)
 	FindByUsuario(usuarioID uuid.UUID) ([]entities.SesionDiaria, error)
 	FindAbiertaByUsuario(usuarioID uuid.UUID) (*entities.SesionDiaria, error)
+	FindLastClosedByUsuario(usuarioID uuid.UUID) (*entities.SesionDiaria, error)
 	Update(sesion *entities.SesionDiaria) error
 	Delete(id uuid.UUID) error
 }

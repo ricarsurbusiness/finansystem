@@ -32,38 +32,49 @@ export default function EditarRefuerzoModal({ refuerzo, sesionId, onSave, onClos
   };
 
   return (
-    <div style={styles.overlay}>
-      <div style={styles.modal}>
-        <h3 style={styles.title}>Editar Refuerzo</h3>
-        <form onSubmit={handleSubmit}>
-          <div style={styles.field}>
-            <label>Monto</label>
-            <input type="number" value={monto} onChange={e => setMonto(e.target.value)} style={styles.input} step="0.01" min="0" />
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl w-full max-w-sm p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">💰 Editar Refuerzo</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Monto</label>
+            <input 
+              type="number" 
+              value={monto} 
+              onChange={e => setMonto(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              step="0.01" 
+              min="0" 
+            />
           </div>
-          <div style={styles.field}>
-            <label>Observación</label>
-            <input type="text" value={observacion} onChange={e => setObservacion(e.target.value)} style={styles.input} />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Observación</label>
+            <input 
+              type="text" 
+              value={observacion} 
+              onChange={e => setObservacion(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
           </div>
-          {error && <p style={styles.error}>{error}</p>}
-          <div style={styles.buttons}>
-            <button type="button" onClick={onClose} style={styles.cancelBtn}>Cancelar</button>
-            <button type="submit" style={styles.saveBtn} disabled={loading}>{loading ? 'Guardando...' : 'Guardar'}</button>
+          {error && <p className="text-sm text-red-600 font-medium bg-red-50 border border-red-200 rounded p-3">{error}</p>}
+          <div className="flex gap-3 pt-2">
+            <button 
+              type="button" 
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition"
+            >
+              {loading ? 'Guardando...' : 'Guardar'}
+            </button>
           </div>
         </form>
       </div>
     </div>
   );
 }
-
-const styles: any = {
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 },
-  modal: { backgroundColor: 'white', borderRadius: '12px', padding: '24px', width: '90%', maxWidth: '350px' },
-  title: { marginBottom: '20px', fontSize: '18px', fontWeight: '600' },
-  field: { marginBottom: '16px' },
-  label: { display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '6px' },
-  input: { width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '14px' },
-  buttons: { display: 'flex', gap: '12px', marginTop: '20px' },
-  cancelBtn: { flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', backgroundColor: 'white', cursor: 'pointer' },
-  saveBtn: { flex: 1, padding: '10px', borderRadius: '6px', border: 'none', backgroundColor: '#2563eb', color: 'white', cursor: 'pointer' },
-  error: { color: '#dc2626', fontSize: '14px', marginTop: '10px' },
-};
