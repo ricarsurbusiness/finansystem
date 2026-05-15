@@ -20,6 +20,19 @@ var (
 	ErrSesionConMovimientos = errors.New("no se puede eliminar una sesión con movimientos")
 )
 
+// getLocation retorna la ubicación (timezone) a partir del string
+// Si no es válida, retorna UTC por defecto
+func getLocation(timezone string) *time.Location {
+	if timezone == "" {
+		return time.UTC
+	}
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		return time.UTC
+	}
+	return loc
+}
+
 type SesionService struct {
 	sesionRepo     ports.SesionRepository
 	movimientoRepo ports.MovimientoRepository
@@ -320,27 +333,26 @@ type ReporteResumen struct {
 }
 
 // ObtenerReporteSemanal obtiene el reporte de la semana actual
-func (s *SesionService) ObtenerReporteSemanal(usuarioID uuid.UUID) (*ReporteResumen, error) {
-	loc, _ := time.LoadLocation("America/Bogota")
+func (s *SesionService) ObtenerReporteSemanal(usuarioID uuid.UUID, timezone string) (*ReporteResumen, error) {
+	loc := getLocation(timezone)
 	now := time.Now().In(loc)
 
 	// Calcular inicio de semana (lunes)
 	weekday := int(now.Weekday())
 	if weekday == 0 {
-		weekday = 7 // Domingo = 7
+		weekday = 7
 	}
 	lunes := now.AddDate(0, 0, -(weekday - 1))
 	inicioSemana := time.Date(lunes.Year(), lunes.Month(), lunes.Day(), 0, 0, 0, 0, loc)
 
-	// Fin de semana
 	finSemana := inicioSemana.AddDate(0, 0, 7)
 
-	return s.generarReporte(usuarioID, inicioSemana, finSemana, "Semana actual")
+	return s.generarReporte(usuarioID, inicioSemana, finSemana, "Semana actual", timezone)
 }
 
 // ObtenerReporteMensual obtiene el reporte del mes actual
-func (s *SesionService) ObtenerReporteMensual(usuarioID uuid.UUID) (*ReporteResumen, error) {
-	loc, _ := time.LoadLocation("America/Bogota")
+func (s *SesionService) ObtenerReporteMensual(usuarioID uuid.UUID, timezone string) (*ReporteResumen, error) {
+	loc := getLocation(timezone)
 	now := time.Now().In(loc)
 
 	// Primer día del mes
@@ -351,12 +363,12 @@ func (s *SesionService) ObtenerReporteMensual(usuarioID uuid.UUID) (*ReporteResu
 	meses := []string{"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"}
 	periodo := fmt.Sprintf("%s %d", meses[now.Month()-1], now.Year())
 
-	return s.generarReporte(usuarioID, inicioMes, finMes, periodo)
+	return s.generarReporte(usuarioID, inicioMes, finMes, periodo, timezone)
 }
 
 // ObtenerReporteMensualPorMes obtiene el reporte de un mes específico
-func (s *SesionService) ObtenerReporteMensualPorMes(usuarioID uuid.UUID, year, month int) (*ReporteResumen, error) {
-	loc, _ := time.LoadLocation("America/Bogota")
+func (s *SesionService) ObtenerReporteMensualPorMes(usuarioID uuid.UUID, year, month int, timezone string) (*ReporteResumen, error) {
+	loc := getLocation(timezone)
 
 	// Primer día del mes especificado
 	inicioMes := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, loc)
@@ -366,11 +378,11 @@ func (s *SesionService) ObtenerReporteMensualPorMes(usuarioID uuid.UUID, year, m
 	meses := []string{"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"}
 	periodo := fmt.Sprintf("%s %d", meses[month-1], year)
 
-	return s.generarReporte(usuarioID, inicioMes, finMes, periodo)
+	return s.generarReporte(usuarioID, inicioMes, finMes, periodo, timezone)
 }
 
 // generarReporte genera un reporte para un rango de fechas
-func (s *SesionService) generarReporte(usuarioID uuid.UUID, inicio, fin time.Time, periodo string) (*ReporteResumen, error) {
+func (s *SesionService) generarReporte(usuarioID uuid.UUID, inicio, fin time.Time, periodo, timezone string) (*ReporteResumen, error) {
 	sesiones, err := s.sesionRepo.FindByUsuario(usuarioID)
 	if err != nil {
 		return nil, err
@@ -381,8 +393,8 @@ func (s *SesionService) generarReporte(usuarioID uuid.UUID, inicio, fin time.Tim
 		Sesiones: []ReporteSesion{},
 	}
 
-	// Debug: fechas del período
-	loc, _ := time.LoadLocation("America/Bogota")
+	// Usar la timezone del usuario para las comparaciones
+	loc := getLocation(timezone)
 	inicioDia := time.Date(inicio.Year(), inicio.Month(), inicio.Day(), 0, 0, 0, 0, loc)
 	finDia := time.Date(fin.Year(), fin.Month(), fin.Day(), 0, 0, 0, 0, loc).AddDate(0, 0, -1)
 
@@ -392,9 +404,8 @@ func (s *SesionService) generarReporte(usuarioID uuid.UUID, inicio, fin time.Tim
 			continue
 		}
 
-		// Comparar fechas como fechas de calendario (año, mes, día)
-		// Esto evita problemas de timezone
-		sesionYear, sesionMonth, sesionDay := sesion.Fecha.Date()
+		// Comparar fechas usando la timezone del usuario
+		sesionYear, sesionMonth, sesionDay := sesion.Fecha.In(loc).Date()
 		inicioYear, inicioMonth, inicioDay := inicioDia.Date()
 		finYear, finMonth, finDay := finDia.Date()
 

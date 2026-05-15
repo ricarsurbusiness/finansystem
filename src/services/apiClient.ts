@@ -14,13 +14,18 @@ class ApiClient {
       },
     });
 
-    // Request interceptor para agregar token
+    // Request interceptor para agregar token y timezone
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
         if (typeof window !== 'undefined') {
           const token = localStorage.getItem('access_token');
           if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
+          }
+          // Agregar timezone del navegador
+          const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          if (config.headers) {
+            config.headers['X-Timezone'] = timezone;
           }
         }
         return config;

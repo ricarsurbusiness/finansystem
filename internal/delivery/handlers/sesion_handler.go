@@ -354,7 +354,13 @@ func (h *SesionHandler) ObtenerReporteSemanal(c *gin.Context) {
 
 	userID, _ := uuid.Parse(userIDStr)
 
-	reporte, err := h.sesionService.ObtenerReporteSemanal(userID)
+	// Obtener timezone del header o usar UTC por defecto
+	timezone := c.GetHeader("X-Timezone")
+	if timezone == "" {
+		timezone = "UTC"
+	}
+
+	reporte, err := h.sesionService.ObtenerReporteSemanal(userID, timezone)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error al obtener reporte"})
 		return
@@ -373,6 +379,12 @@ func (h *SesionHandler) ObtenerReporteMensual(c *gin.Context) {
 
 	userID, _ := uuid.Parse(userIDStr)
 
+	// Obtener timezone del header o usar UTC por defecto
+	timezone := c.GetHeader("X-Timezone")
+	if timezone == "" {
+		timezone = "UTC"
+	}
+
 	// Parámetros opcionales: year y month
 	year := c.Query("year")
 	month := c.Query("month")
@@ -384,10 +396,10 @@ func (h *SesionHandler) ObtenerReporteMensual(c *gin.Context) {
 		// Usar mes específico
 		yearInt, _ := strconv.Atoi(year)
 		monthInt, _ := strconv.Atoi(month)
-		reporte, err = h.sesionService.ObtenerReporteMensualPorMes(userID, yearInt, monthInt)
+		reporte, err = h.sesionService.ObtenerReporteMensualPorMes(userID, yearInt, monthInt, timezone)
 	} else {
 		// Usar mes actual
-		reporte, err = h.sesionService.ObtenerReporteMensual(userID)
+		reporte, err = h.sesionService.ObtenerReporteMensual(userID, timezone)
 	}
 
 	if err != nil {
@@ -408,6 +420,12 @@ func (h *SesionHandler) ExportarReporteMensualCSV(c *gin.Context) {
 
 	userID, _ := uuid.Parse(userIDStr)
 
+	// Obtener timezone del header
+	timezone := c.GetHeader("X-Timezone")
+	if timezone == "" {
+		timezone = "UTC"
+	}
+
 	// Parámetros opcionales: year y month
 	year := c.Query("year")
 	month := c.Query("month")
@@ -418,9 +436,9 @@ func (h *SesionHandler) ExportarReporteMensualCSV(c *gin.Context) {
 	if year != "" && month != "" {
 		yearInt, _ := strconv.Atoi(year)
 		monthInt, _ := strconv.Atoi(month)
-		reporte, err = h.sesionService.ObtenerReporteMensualPorMes(userID, yearInt, monthInt)
+		reporte, err = h.sesionService.ObtenerReporteMensualPorMes(userID, yearInt, monthInt, timezone)
 	} else {
-		reporte, err = h.sesionService.ObtenerReporteMensual(userID)
+		reporte, err = h.sesionService.ObtenerReporteMensual(userID, timezone)
 	}
 
 	if err != nil {
