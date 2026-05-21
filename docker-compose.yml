@@ -2,51 +2,77 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: finansystem-db
+
     environment:
       POSTGRES_USER: finansystem
       POSTGRES_PASSWORD: ${DB_PASSWORD:-finansystem_dev}
       POSTGRES_DB: finansystem
-    ports:
-      - "5433:5432"
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U finansystem"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+    restart: unless-stopped
+
+    networks:
+      - finansystem-network
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: finansystem-backend
+
     ports:
       - "8081:8081"
+
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=finansystem
-      - DB_PASSWORD=${DB_PASSWORD:-finansystem_dev}
-      - DB_NAME=finansystem
-      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: finansystem
+      DB_PASSWORD: ${DB_PASSWORD:-finansystem_dev}
+      DB_NAME: finansystem
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key}
+
     depends_on:
       postgres:
         condition: service_healthy
+
     restart: unless-stopped
+
+    networks:
+      - finansystem-network
 
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+
     container_name: finansystem-frontend
+
     ports:
       - "3000:3000"
+
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8081
+      NEXT_PUBLIC_API_URL: /api
+
     depends_on:
       - backend
+
     restart: unless-stopped
+
+    networks:
+      - finansystem-network
 
 volumes:
   postgres_data:
+
+networks:
+  finansystem-network:
+    driver: bridge
