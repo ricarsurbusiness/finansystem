@@ -83,7 +83,67 @@ services:
 
     networks:
       - finansystem-network
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
 
+    restart: unless-stopped
+
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+
+    ports:
+      - "127.0.0.1:9090:9090"
+
+    networks:
+      - finansystem-network
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3002:3000"
+    environment:
+      - GF_SERVER_ROOT_URL=http://%(domain)s/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - finansystem-network
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:9100:9100"
+
+    networks:
+      - finansystem-network
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+
+    restart: unless-stopped
+
+    privileged: true
+
+    ports:
+      - "127.0.0.1:8088:8080"
+
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
+    networks:
+      - finansystem-network
 networks:
   finansystem-network:
     driver: bridge
@@ -91,3 +151,4 @@ networks:
 volumes:
   postgres_data:
   uptime-kuma:
+  grafana_data:
