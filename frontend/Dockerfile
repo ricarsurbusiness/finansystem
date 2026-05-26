@@ -12,6 +12,10 @@ RUN npm ci --legacy-peer-deps
 # Copy source code
 COPY . .
 
+# Build-time public API URL for Next.js
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 # Ensure public exists for runtime copy
 RUN mkdir -p /app/public
 
