@@ -1,0 +1,33 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+
+  # ── BACKEND GO ─────────────────────────────────────────────
+  - job_name: backend
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: finansystem-backend
+          container: finansystem-backend
+          env: production
+          __path__: /var/lib/docker/containers/aa94cd76ba07*/*-json.log
+
+  # ── POSTGRES ───────────────────────────────────────────────
+  - job_name: postgres
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: finansystem-db
+          container: finansystem-db
+          env: production
+          __path__: /var/lib/docker/containers/b8941a781526*/*-json.log

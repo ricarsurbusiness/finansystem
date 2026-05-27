@@ -162,16 +162,13 @@ services:
   promtail:
     image: grafana/promtail:latest
     container_name: promtail
-
     restart: unless-stopped
-
     volumes:
       - /var/log:/var/log
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - ./monitoring/promtail-config.yml:/etc/promtail/config.yml
-
+      - /var/run/docker.sock:/var/run/docker.sock  
     command: -config.file=/etc/promtail/config.yml
-
     networks:
       - finansystem-network
 networks:
