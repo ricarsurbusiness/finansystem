@@ -53,21 +53,17 @@ export const useAuthStore = create<AuthState>()(
         try {
           await authService.register({ email, password, nombre });
           // Auto-login después de registrar
-          await authService.login({ email, password });
-          
-          // Obtener el usuario
-          const user = await authService.getMe();
-          
+          const response = await authService.login({ email, password });
+
           if (typeof window !== 'undefined') {
-            const token = localStorage.getItem('access_token');
-            if (token) {
-              set({ 
-                user, 
-                isAuthenticated: true, 
-                isLoading: false 
-              });
-            }
+            localStorage.setItem('access_token', response.access_token);
           }
+
+          set({
+            user: response.user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
         } catch (error: any) {
           set({ 
             isLoading: false, 

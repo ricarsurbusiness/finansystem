@@ -46,3 +46,9 @@ Thumbs.db
 # Misc
 *.tgz
 .cache/
+
+# Local Docker files
+docker-compose.yml
+docker-compose.override.yml
+Dockerfile
+frontend/Dockerfile

@@ -54,7 +54,7 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: /api
+        NEXT_PUBLIC_API_URL: http://localhost:8081
 
     container_name: finansystem-frontend
 
@@ -62,7 +62,7 @@ services:
       - "3000:3000"
 
     environment:
-      NEXT_PUBLIC_API_URL: /api
+      NEXT_PUBLIC_API_URL: http://localhost:8081
 
     depends_on:
       - backend

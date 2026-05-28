@@ -67,7 +67,7 @@ type CerrarSesionInput struct {
 // CrearSesion crea una nueva sesión diaria
 func (s *SesionService) CrearSesion(input CrearSesionInput) (*entities.SesionResponse, error) {
 	// Verificar si ya hay una sesión abierta para hoy
-	loc, _ := time.LoadLocation("America/Bogota")
+	loc := getLocation("America/Bogota")
 	fecha := time.Now().In(loc)
 	if input.Fecha != nil {
 		fecha = *input.Fecha
