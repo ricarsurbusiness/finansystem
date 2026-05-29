@@ -48,30 +48,25 @@ services:
 
     networks:
       - finansystem-network
-
+  
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: http://localhost:8081
-
+  
     container_name: finansystem-frontend
-
+  
     ports:
       - "3000:3000"
-
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8081
-
+  
     depends_on:
       - backend
-
+  
     restart: unless-stopped
-
+  
     networks:
       - finansystem-network
-
+  
   uptime-kuma:
     image: louislam/uptime-kuma:1
     container_name: uptime-kuma

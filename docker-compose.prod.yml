@@ -1,0 +1,14 @@
+# Docker Compose for Production
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: /api
+
+    environment:
+      NEXT_PUBLIC_API_URL: /api
