@@ -22,21 +22,21 @@ jobs:
 
           script: |
             set -e
-                  
+
             echo "🚀 Starting deploy..."
-                  
+
             cd ~/finansystem
-                  
+
             echo "📥 Pulling latest changes..."
-            git pull origin main
-                  
+              git fetch origin main
+              git reset --hard origin/main
             echo "🐳 Rebuilding containers..."
             docker compose \
               -f docker-compose.yml \
               -f docker-compose.prod.yml \
               up -d --build
-                  
+
             echo "🧹 Cleaning unused Docker images..."
             docker image prune -af
-                  
+
             echo "✅ Deploy completed successfully!"
